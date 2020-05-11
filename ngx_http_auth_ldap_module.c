@@ -1339,7 +1339,7 @@ ngx_http_auth_ldap_ssl_handshake_handler(ngx_connection_t *conn, ngx_flag_t vali
     ngx_http_auth_ldap_connection_t *c;
     c = conn->data;
 
-    nginx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: ngx_http_auth_ldap_ssl_handshake_handler: %d", validate);
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: ngx_http_auth_ldap_ssl_handshake_handler: %d", validate);
 
     if (conn->ssl->handshaked) {
         #if OPENSSL_VERSION_NUMBER >= 0x10002000
@@ -1347,36 +1347,36 @@ ngx_http_auth_ldap_ssl_handshake_handler(ngx_connection_t *conn, ngx_flag_t vali
           X509 *cert = SSL_get_peer_certificate(conn->ssl->connection);
 
           if (cert == NULL) {
-            nginx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: SSL_get_peer_certificate is NULL!");
+            ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: SSL_get_peer_certificate is NULL!");
           } else {
-            nginx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: SSL_get_peer_certificate non-null");
+            ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: SSL_get_peer_certificate non-null");
 
             char *line;
             line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
-            nginx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: subject: %s", line);
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: subject: %s", line);
             free(line);
             line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
-            nginx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: issuer: %s", line);
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: issuer: %s", line);
             free(line);
           }
 
           long chain_verified = SSL_get_verify_result(conn->ssl->connection);
 
-          nginx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: SSL_get_verify_result: %l", chain_verified);
+          ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: SSL_get_verify_result: %l", chain_verified);
 
           int addr_verified;
           if (c->server->ssl_check_cert == SSL_CERT_VERIFY_CHAIN) {
             // chain_verified is enough, not requiring full name/IP verification
             addr_verified = 1;
 
-            nginx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: skipping host/addr verification");
+            ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: skipping host/addr verification");
 
           } else {
             // verify hostname/IP
             char *hostname = c->server->ludpp->lud_host;
             addr_verified = X509_check_host(cert, hostname, 0, 0, 0);
 
-            nginx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: X509_check_host (%s): %l", hostname, addr_verified);
+            ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: X509_check_host (%s): %l", hostname, addr_verified);
 
             if (!addr_verified) { // domain not in cert? try IP
               size_t len; // get IP length
@@ -1394,7 +1394,7 @@ ngx_http_auth_ldap_ssl_handshake_handler(ngx_connection_t *conn, ngx_flag_t vali
               }
               addr_verified = X509_check_ip(cert, (const unsigned char*)conn_sockaddr->sa_data, len, 0);
 
-              nginx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: X509_check_ip: %l", addr_verified);
+              ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "SSL handshake: X509_check_ip: %l", addr_verified);
             }
           }
 
