@@ -33,6 +33,7 @@
 #include <ngx_md5.h>
 #include <ldap.h>
 #include <openssl/opensslv.h>
+#include <openssl/x509.h>
 
 // used for manual warnings
 #define XSTR(x) STR(x)
@@ -1342,17 +1343,38 @@ ngx_http_auth_ldap_ssl_handshake_handler(ngx_connection_t *conn, ngx_flag_t vali
         #if OPENSSL_VERSION_NUMBER >= 0x10002000
         if (validate) { // verify remote certificate if requested
           X509 *cert = SSL_get_peer_certificate(conn->ssl->connection);
+
+          if (cert == NULL) {
+            ngx_conf_log_error(NGX_LOG_NOTICE, c->log, 0, "SSL handshake: SSL_get_peer_certificate is NULL!");
+          } else {
+            ngx_conf_log_error(NGX_LOG_NOTICE, c->log, 0, "SSL handshake: SSL_get_peer_certificate non-null");
+
+            char *line;
+            line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
+            ngx_conf_log_error(NGX_LOG_NOTICE, c->log, 0, "SSL handshake: subject: %s");
+            free(line);
+            line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
+            ngx_conf_log_error(NGX_LOG_NOTICE, c->log, 0, "SSL handshake: issuer: %s");
+            free(line);
+          }
+
           long chain_verified = SSL_get_verify_result(conn->ssl->connection);
+
+          ngx_conf_log_error(NGX_LOG_NOTICE, c->log, 0, "SSL handshake: SSL_get_verify_result: %l", chain_verified);
 
           int addr_verified;
           if (c->server->ssl_check_cert == SSL_CERT_VERIFY_CHAIN) {
             // chain_verified is enough, not requiring full name/IP verification
             addr_verified = 1;
 
+            ngx_conf_log_error(NGX_LOG_NOTICE, c->log, 0, "SSL handshake: skipping host/addr verification");
+
           } else {
             // verify hostname/IP
             char *hostname = c->server->ludpp->lud_host;
             addr_verified = X509_check_host(cert, hostname, 0, 0, 0);
+
+            ngx_conf_log_error(NGX_LOG_NOTICE, c->log, 0, "SSL handshake: X509_check_host (%s): %l", hostname, addr_verified);
 
             if (!addr_verified) { // domain not in cert? try IP
               size_t len; // get IP length
@@ -1369,6 +1391,8 @@ ngx_http_auth_ldap_ssl_handshake_handler(ngx_connection_t *conn, ngx_flag_t vali
                 return;
               }
               addr_verified = X509_check_ip(cert, (const unsigned char*)conn_sockaddr->sa_data, len, 0);
+
+              ngx_conf_log_error(NGX_LOG_NOTICE, c->log, 0, "SSL handshake: X509_check_ip: %l", addr_verified);
             }
           }
 
@@ -1378,7 +1402,6 @@ ngx_http_auth_ldap_ssl_handshake_handler(ngx_connection_t *conn, ngx_flag_t vali
               ngx_log_error(NGX_LOG_ERR, c->log, 0,
                 "http_auth_ldap: Remote side presented invalid SSL certificate: "
                 "does not match address (neither server's domain nor IP in certificate's CN or SAN)");
-                fprintf(stderr, "DEBUG: SSL cert domain mismatch\n"); fflush(stderr);
             } else {
               ngx_log_error(NGX_LOG_ERR, c->log, 0,
                 "http_auth_ldap: Remote side presented invalid SSL certificate: error %l, %s",
