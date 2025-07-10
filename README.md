@@ -4,7 +4,7 @@ LDAP module for nginx which supports authentication against multiple LDAP server
 
 ## Project history
 
-This project is a clone of [nginx-auth-ldap](https://github.com/kvspb/nginx-auth-ldap)  original module from [kvspb](https://github.com/kvspb).
+This project is a clone of [nginx-auth-ldap](https://github.com/kvspb/nginx-auth-ldap) original module from [kvspb](https://github.com/kvspb).
 
 The reasons for this fork are:
 
@@ -39,7 +39,7 @@ Check HTTP_AUTH_LDAP options
 ### Linux
 
 ```bash
-cd ~ && git clone https://github.com/Ericbla/nginx-auth-ldap.git   
+cd ~ && git clone https://github.com/mmguero-dev/nginx-auth-ldap.git   
 ```
 
 in nginx source folder
