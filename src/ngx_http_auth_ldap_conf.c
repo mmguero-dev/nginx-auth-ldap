@@ -37,6 +37,7 @@ static char * ngx_http_auth_ldap_parse_require(ngx_conf_t *cf, ngx_http_auth_lda
 static char * ngx_http_auth_ldap_parse_satisfy(ngx_conf_t *cf, ngx_http_auth_ldap_server_t *server);
 static char * ngx_http_auth_ldap_parse_referral(ngx_conf_t *cf);
 static char * ngx_http_auth_ldap_parse_flag(ngx_conf_t *cf, ngx_flag_t *flag);
+static char * ngx_http_auth_ldap_parse_ssl_check_cert(ngx_conf_t *cf, ngx_http_auth_ldap_server_t *server);
 static char * ngx_http_auth_ldap_read_passwd(ngx_conf_t *cf, ngx_http_auth_ldap_server_t *server, ngx_str_t *name);
 static char * ngx_http_auth_ldap_parse_keepalive(ngx_conf_t *cf, ngx_http_auth_ldap_server_t *server);
 static ngx_int_t ngx_http_auth_ldap_template_shape(ngx_conf_t *cf, ngx_http_auth_ldap_server_t *server, ngx_str_t *template);
@@ -295,7 +296,7 @@ ngx_http_auth_ldap_create_ssl(ngx_conf_t *cf, ngx_http_auth_ldap_server_t *serve
 
 #if (NGX_OPENSSL)
 /**
- * Load the CA certificates of an ldaps server with ssl_check_cert on into
+ * Load the CA certificates of an ldaps server with ssl_check_cert on or chain into
  * its own SSL context, once, after the whole ldap_server block is read.
  */
 static char *
@@ -414,7 +415,7 @@ ngx_http_auth_ldap_ldap_server(ngx_conf_t *cf, ngx_command_t *dummy, void *conf)
     } else if (ngx_strcmp(value[0].data, "starttls") == 0) {
         return ngx_http_auth_ldap_parse_flag(cf, &server->starttls);
     } else if (ngx_strcmp(value[0].data, "ssl_check_cert") == 0) {
-        return ngx_http_auth_ldap_parse_flag(cf, &server->ssl_check_cert);
+        return ngx_http_auth_ldap_parse_ssl_check_cert(cf, server);
     } else if (ngx_strcmp(value[0].data, "ssl_ca_dir") == 0) {
       server->ssl_ca_dir = value[1];
     } else if (ngx_strcmp(value[0].data, "ssl_ca_file") == 0) {
@@ -464,6 +465,38 @@ ngx_http_auth_ldap_parse_flag(ngx_conf_t *cf, ngx_flag_t *flag)
 
     ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
         "http_auth_ldap: invalid value \"%V\" for %V, it must be \"on\" or \"off\"",
+        &value[1], &value[0]);
+    return NGX_CONF_ERROR;
+}
+
+/*
+ * ssl_check_cert on | off | chain. "full" is accepted as "on" for
+ * configurations written for the chain patch before 1.0.
+ */
+static char *
+ngx_http_auth_ldap_parse_ssl_check_cert(ngx_conf_t *cf, ngx_http_auth_ldap_server_t *server)
+{
+    ngx_str_t *value;
+
+    value = cf->args->elts;
+
+    if (ngx_strcmp(value[1].data, "on") == 0 || ngx_strcmp(value[1].data, "full") == 0) {
+        server->ssl_check_cert = NGX_HTTP_AUTH_LDAP_SSL_CHECK_FULL;
+        return NGX_CONF_OK;
+    }
+
+    if (ngx_strcmp(value[1].data, "chain") == 0) {
+        server->ssl_check_cert = NGX_HTTP_AUTH_LDAP_SSL_CHECK_CHAIN;
+        return NGX_CONF_OK;
+    }
+
+    if (ngx_strcmp(value[1].data, "off") == 0) {
+        server->ssl_check_cert = NGX_HTTP_AUTH_LDAP_SSL_CHECK_OFF;
+        return NGX_CONF_OK;
+    }
+
+    ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+        "http_auth_ldap: invalid value \"%V\" for %V, it must be \"on\", \"off\" or \"chain\"",
         &value[1], &value[0]);
     return NGX_CONF_ERROR;
 }

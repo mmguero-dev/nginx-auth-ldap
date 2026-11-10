@@ -8,6 +8,14 @@ Entries refer to issues of the original repository as kvspb#N
 
 ## [Unreleased]
 
+### Added
+
+- `ssl_check_cert chain` verifies that the certificate of an `ldaps://` or
+  StartTLS server leads to a trusted CA without checking the host of the
+  `url`, as stunnel does without `checkHost` or `checkIP` (kvspb#236). Meant
+  for a private CA in `ssl_ca_file` or `ssl_ca_dir`. `full` is accepted as
+  a synonym of `on`.
+
 ## [1.2.0] - 2026-11-02
 
 ### Added

@@ -93,8 +93,8 @@ ngx_http_auth_ldap_ssl_handshake_handler(ngx_connection_t *conn)
 }
 
 /*
- * Verify the certificate of the LDAP server: a trusted chain, and the host
- * of the url in its subjectAltName.
+ * Verify the certificate of the LDAP server: a trusted chain, and, unless
+ * ssl_check_cert is chain, the host of the url in its subjectAltName.
  */
 static ngx_int_t
 ngx_http_auth_ldap_check_peer(ngx_http_auth_ldap_connection_t *c,
@@ -119,6 +119,13 @@ ngx_http_auth_ldap_check_peer(ngx_http_auth_ldap_connection_t *c,
         ngx_log_error(NGX_LOG_ERR, c->log, 0,
             "http_auth_ldap: Remote side presented invalid SSL certificate: error %l, %s",
             chain_verified, X509_verify_cert_error_string(chain_verified));
+        goto done;
+    }
+
+    if (c->server->ssl_check_cert == NGX_HTTP_AUTH_LDAP_SSL_CHECK_CHAIN) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
+            "http_auth_ldap: ssl_check_cert chain: the host is not checked");
+        rc = NGX_OK;
         goto done;
     }
 

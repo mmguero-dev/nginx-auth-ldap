@@ -59,6 +59,11 @@ extern int ldap_init_fd(ber_socket_t fd, int proto, const char *url, LDAP **ld);
 #define NGX_HTTP_AUTH_LDAP_MAX_SERVERS_SIZE 7
 
 
+/* ssl_check_cert: what of the server certificate is verified. */
+#define NGX_HTTP_AUTH_LDAP_SSL_CHECK_OFF    0   /* nothing */
+#define NGX_HTTP_AUTH_LDAP_SSL_CHECK_FULL   1   /* the chain and the host */
+#define NGX_HTTP_AUTH_LDAP_SSL_CHECK_CHAIN  2   /* the chain only */
+
 typedef struct {
     LDAPURLDesc *ludpp;
     ngx_str_t url;
@@ -75,7 +80,7 @@ typedef struct {
     ngx_flag_t group_attribute_dn;
 
     ngx_flag_t starttls;            /* StartTLS on an ldap:// url */
-    ngx_flag_t ssl_check_cert;
+    ngx_uint_t ssl_check_cert;      /* NGX_HTTP_AUTH_LDAP_SSL_CHECK_* */
     ngx_str_t ssl_ca_dir;
     ngx_str_t ssl_ca_file;
 #if (NGX_OPENSSL)

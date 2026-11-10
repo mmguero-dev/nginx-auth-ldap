@@ -679,7 +679,7 @@ fails the configuration check.
 #### ssl_check_cert
 
 ```text
-Syntax:  ssl_check_cert on | off;
+Syntax:  ssl_check_cert on | off | chain;
 Default: ssl_check_cert off;
 ```
 
@@ -690,6 +690,15 @@ subjectAltName. An IP subjectAltName does not match a host name, even one
 that resolves to that address, and the subject CN is not used. With `off`
 any certificate is accepted, which exposes passwords to a man in the
 middle.
+
+With `chain`, the chain must lead to a trusted CA and the host is not
+checked: any certificate that CA issued is accepted, for any host. Use it
+only with `ssl_ca_file` or `ssl_ca_dir` naming a private CA that issues
+certificates to LDAP servers alone, for example when the `url` is an
+address and the certificates name host names only. Without either
+directive the system store is trusted, and `chain` then accepts a
+certificate any public CA issued to anyone. `full` is accepted as a
+synonym of `on`.
 
 #### ssl_ca_file
 
@@ -702,7 +711,7 @@ Trust the CA certificates in this PEM file for `ssl_check_cert`. Use an
 absolute path. With `ssl_ca_file` or `ssl_ca_dir` set, only these CAs are
 trusted; without both, the default CA store of OpenSSL is used. A file that
 cannot be loaded fails the configuration check. Only read for `ldaps://` or
-`starttls on`, with `ssl_check_cert on`.
+`starttls on`, with `ssl_check_cert on` or `chain`.
 
 #### ssl_ca_dir
 

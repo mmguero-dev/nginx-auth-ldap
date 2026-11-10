@@ -73,7 +73,7 @@ def server_case(
         ),
         server_case(
             "ssl-check-cert-unknown-value",
-            'invalid value "maybe" for ssl_check_cert, it must be "on" or "off"',
+            'invalid value "maybe" for ssl_check_cert, it must be "on", "off" or "chain"',
             "require valid_user;\nssl_check_cert maybe;",
         ),
         # url
@@ -267,6 +267,8 @@ def test_ldap_server_without_url_does_not_start(nginx):
         pytest.param("connections 2;", id="connections"),
         pytest.param("ssl_check_cert on;", id="ssl_check_cert-on"),
         pytest.param("ssl_check_cert off;", id="ssl_check_cert-off"),
+        pytest.param("ssl_check_cert chain;", id="ssl_check_cert-chain"),
+        pytest.param("ssl_check_cert full;", id="ssl_check_cert-full"),
         pytest.param("ssl_ca_dir /etc/ssl/certs;", id="ssl_ca_dir"),
         pytest.param("ssl_ca_file /etc/ssl/certs/ca-certificates.crt;", id="ssl_ca_file"),
         pytest.param("connect_timeout 5s;", id="connect_timeout"),

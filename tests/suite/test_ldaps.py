@@ -256,3 +256,52 @@ def test_tls_before_1_2_is_refused(nginx, version):
 
         assert_denied(server)
         assert proxy.versions == []
+
+
+# ssl_check_cert chain: the chain is verified, the host is not (kvspb#236).
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        pytest.param(ldaps_url(port=WRONG_HOST_PORT), id="another-host"),
+        pytest.param(ldaps_url(port=CN_ONLY_PORT), id="host-only-in-subject-cn"),
+        pytest.param(ldaps_url(LDAP_IPV4, port=DNS_ONLY_PORT), id="ipv4-address-dns-san-only"),
+        pytest.param(ldaps_url("ldap4"), id="host-name-ip-san-only"),
+    ],
+)
+def test_chain_accepts_a_trusted_certificate_for_any_host(nginx, url):
+    server = start(nginx, url, check="chain")
+
+    assert server.get(auth=creds("alice")).status_code == 200
+    assert server.get(auth=("alice", "wrong")).status_code == 401
+
+
+def test_chain_rejects_an_untrusted_issuer(nginx):
+    server = start(nginx, ldaps_url(port=UNTRUSTED_PORT), check="chain")
+
+    assert_denied(server)
+    assert "presented invalid SSL certificate: error" in server.log()
+
+
+def test_chain_does_not_trust_the_test_ca_without_ssl_ca_file(nginx):
+    server = start(nginx, ldaps_url(), check="chain", ca_file=None)
+
+    assert_denied(server)
+    assert "presented invalid SSL certificate: error" in server.log()
+
+
+def test_chain_trusts_a_ca_directory(nginx, tmp_path):
+    ca_directory(tmp_path)
+    body = f"require valid_user;\nssl_check_cert chain;\nssl_ca_dir {tmp_path};{TIMEOUTS}"
+    url = ldaps_url(LDAP_IPV4, port=DNS_ONLY_PORT)
+    server = nginx.start(http=ldap_server("tls", body, url=url), server=protected_location("tls"))
+
+    assert server.get(auth=creds("alice")).status_code == 200
+
+
+def test_full_is_on(nginx):
+    server = start(nginx, ldaps_url(port=WRONG_HOST_PORT), check="full")
+
+    assert_denied(server)
+    assert "does not match address" in server.log()
